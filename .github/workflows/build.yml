@@ -57,28 +57,30 @@ jobs:
       - name: Build frontend
         run: npm ci && npm run build
 
-      # Build natively inside an arm64 Ubuntu container (QEMU emulated).
+      # Build natively inside an arm64 Ubuntu 24.04 container via QEMU.
       # The GitHub workspace is bind-mounted, so the binary ends up in
       # src-tauri/target/release on the host as well.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Build application (arm64)
-        uses: uraimo/run-on-arch-action@v2
-        with:
-          arch: aarch64
-          dockerImage: arm64v8/ubuntu:24.04
-          githubToken: ${{ github.token }}
-          install: |
+        run: |
+          docker run --rm --platform linux/arm64 \
+            -v "$GITHUB_WORKSPACE:/workspace" -w /workspace \
+            ubuntu:24.04 bash -c '
+            set -euxo pipefail
             export DEBIAN_FRONTEND=noninteractive
             apt-get update
             apt-get install -y --no-install-recommends \
               build-essential pkg-config curl ca-certificates file \
               libwebkit2gtk-4.1-dev libxdo-dev libssl-dev \
               libayatana-appindicator3-dev librsvg2-dev
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-          run: |
-            source "$HOME/.cargo/env"
+            curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+            . "$HOME/.cargo/env"
             cargo build --release --manifest-path src-tauri/Cargo.toml
-            mkdir -p artifacts
-            cp src-tauri/target/release/hexviwer artifacts/hexviwer-linux-arm64
+          '
+          mkdir -p artifacts
+          cp src-tauri/target/release/hexviwer artifacts/hexviwer-linux-arm64
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
