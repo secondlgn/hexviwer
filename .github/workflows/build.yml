@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -50,7 +50,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       # Frontend is platform-independent; build it on the x64 host so the
       # slow QEMU container only has to compile Rust.
@@ -64,12 +64,13 @@ jobs:
         uses: uraimo/run-on-arch-action@v2
         with:
           arch: aarch64
-          distro: ubuntu24.04
+          dockerImage: arm64v8/ubuntu:24.04
           githubToken: ${{ github.token }}
           install: |
+            export DEBIAN_FRONTEND=noninteractive
             apt-get update
             apt-get install -y --no-install-recommends \
-              build-essential curl ca-certificates file \
+              build-essential pkg-config curl ca-certificates file \
               libwebkit2gtk-4.1-dev libxdo-dev libssl-dev \
               libayatana-appindicator3-dev librsvg2-dev
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
